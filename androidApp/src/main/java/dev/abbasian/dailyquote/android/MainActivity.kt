@@ -3,38 +3,30 @@ package dev.abbasian.dailyquote.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import dev.abbasian.dailyquote.Greeting
+import dev.abbasian.dailyquote.presentation.QuoteViewModel
 
 class MainActivity : ComponentActivity() {
+    //private val viewModel: QuoteViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MyApplicationTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    GreetingView(Greeting().greet())
-                }
+                //DailyQuoteApp(viewModel = viewModel)
+                Text("text android")
             }
         }
     }
 }
 
 @Composable
-fun GreetingView(text: String) {
-    Text(text = text)
-}
+fun DailyQuoteApp(viewModel: QuoteViewModel) {
 
-@Preview
-@Composable
-fun DefaultPreview() {
-    MyApplicationTheme {
-        GreetingView("Hello, Android!")
-    }
 }

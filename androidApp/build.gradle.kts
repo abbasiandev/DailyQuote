@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.kotlinCompose)
 }
 
 android {
@@ -45,4 +46,6 @@ dependencies {
     implementation(libs.compose.runtime.livedata)
     implementation(libs.material3)
     implementation(libs.accompanist.systemuicontroller)
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
 }

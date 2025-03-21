@@ -13,7 +13,8 @@ import kotlinx.serialization.json.Json
 import platform.Foundation.NSUserDefaults
 
 class IOSQuoteLocalDataSource : QuoteLocalDataSource {
-    private val settings = Settings(NSUserDefaults.standardUserDefaults)
+    private val settings: Settings =
+        com.russhwolf.settings.AppleSettings(NSUserDefaults.standardUserDefaults)
 
     // StateFlow to simulate reactive data
     private val favoritesFlow = MutableStateFlow<List<Quote>>(emptyList())
@@ -43,8 +44,6 @@ class IOSQuoteLocalDataSource : QuoteLocalDataSource {
     }
 
     override fun observeFavorites(): Flow<List<Quote>> {
-        // Initialize flow with current favorites
-        getFavorites()
         return favoritesFlow
     }
 

@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.compose.runtime.livedata)
     implementation(libs.material3)
     implementation(libs.accompanist.systemuicontroller)
+    implementation(libs.ktor.client.android)
     implementation(libs.koin.core)
     implementation(libs.koin.android)
 }

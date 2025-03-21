@@ -3,30 +3,20 @@ package dev.abbasian.dailyquote.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import dev.abbasian.dailyquote.Greeting
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
+import dev.abbasian.dailyquote.ui.DailyQuoteApp
+import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
-    //private val viewModel: QuoteViewModel by viewModels()
+    private val viewModel: QuoteViewModel by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             MyApplicationTheme {
-                //DailyQuoteApp(viewModel = viewModel)
-                Text("text android")
+                DailyQuoteApp(viewModel = viewModel)
             }
         }
     }
-}
-
-@Composable
-fun DailyQuoteApp(viewModel: QuoteViewModel) {
-
 }

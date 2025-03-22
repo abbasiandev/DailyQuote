@@ -1,7 +1,12 @@
 package dev.abbasian.dailyquote.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -39,6 +45,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,15 +63,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import coil3.compose.setSingletonImageLoaderFactory
 import dev.abbasian.dailyquote.data.model.Quote
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
+import dev.abbasian.dailyquote.util.getAsyncImageLoader
+import kotlinx.coroutines.launch
 
 @Composable
 fun DailyQuoteApp(viewModel: QuoteViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+
+    setSingletonImageLoaderFactory { context ->
+        getAsyncImageLoader(context)
+    }
 
     Scaffold(
         bottomBar = {
@@ -121,131 +136,254 @@ fun QuoteScreen(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        if (isLoading) {
-            CircularProgressIndicator()
-        } else if (quote != null) {
-            val scale = remember { Animatable(1f) }
-            var isImageLoading by remember { mutableStateOf(true) }
-            var imageLoadError by remember { mutableStateOf(false) }
-
-            LaunchedEffect(quote) {
-                scale.snapTo(1f)
-                scale.animateTo(
-                    targetValue = 1.05f,
-                    animationSpec = tween(durationMillis = 10000, easing = LinearEasing)
-                )
-            }
-
-            Box(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surface)
-                )
-
-                AsyncImage(
-                    model = quote.authorImageUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            scaleX = scale.value
-                            scaleY = scale.value
-                            alpha = if (isImageLoading || imageLoadError) 0f else 0.4f
-                        },
-                    onLoading = { isImageLoading = true },
-                    onSuccess = { isImageLoading = false },
-                    onError = {
-                        isImageLoading = false
-                        imageLoadError = true
-                    }
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.7f),
-                                    Color.Black.copy(alpha = 0.5f),
-                                    Color.Black.copy(alpha = 0.7f)
-                                )
-                            )
-                        )
-                )
-            }
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
-            ) {
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = quote.text,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                Text(
-                    text = "— ${quote.author}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontStyle = FontStyle.Italic,
-                    color = Color.White,
-                    modifier = Modifier.padding(bottom = 32.dp)
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    IconButton(
-                        onClick = onToggleFavorite,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                shape = CircleShape
-                            )
-                            .padding(8.dp)
-                    ) {
-                        Icon(
-                            if (quote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Toggle Favorite",
-                            tint = if (quote.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Button(
-                        onClick = onRandomQuote,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        ),
-                        modifier = Modifier.padding(8.dp)
-                    ) {
-                        Text("Another Quote")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        } else {
-            Text("No quote available. Try refreshing.")
+        when {
+            isLoading -> CircularProgressIndicator()
+            quote != null -> DynamicQuoteContent(
+                quote = quote,
+                onToggleFavorite = onToggleFavorite,
+                onRandomQuote = onRandomQuote
+            )
+            else -> Text("No quote available. Try refreshing.")
         }
     }
+}
+
+@Composable
+private fun DynamicQuoteContent(
+    quote: Quote,
+    onToggleFavorite: () -> Unit,
+    onRandomQuote: () -> Unit
+) {
+    val imageScale = remember { Animatable(1f) }
+    val panOffsetX = remember { Animatable(0f) }
+    val panOffsetY = remember { Animatable(0f) }
+    var isImageLoading by remember { mutableStateOf(true) }
+    var loadError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(quote) {
+        imageScale.snapTo(1f)
+        panOffsetX.snapTo(0f)
+        panOffsetY.snapTo(0f)
+
+        launch { animateZoom(imageScale) }
+        launch { animatePanX(panOffsetX) }
+        launch { animatePanY(panOffsetY) }
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        BackgroundImage(
+            url = quote.authorImageUrl,
+            scale = imageScale.value,
+            panX = panOffsetX.value,
+            panY = panOffsetY.value,
+            isLoading = isImageLoading,
+            error = loadError,
+            onLoadStateChange = { loading, error ->
+                isImageLoading = loading
+                loadError = error
+            }
+        )
+
+        GradientOverlay()
+
+        QuoteTextContent(
+            quote = quote,
+            onToggleFavorite = onToggleFavorite,
+            onRandomQuote = onRandomQuote
+        )
+    }
+}
+
+@Composable
+private fun BackgroundImage(
+    url: String,
+    scale: Float,
+    panX: Float,
+    panY: Float,
+    isLoading: Boolean,
+    error: Boolean,
+    onLoadStateChange: (Boolean, Boolean) -> Unit
+) {
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                translationX = panX * (2 - scale)
+                translationY = panY * (2 - scale)
+                alpha = when {
+                    isLoading || error -> 0f
+                    else -> 0.7f.coerceAtMost(scale - 0.3f)
+                }
+            },
+        onLoading = { onLoadStateChange(true, false) },
+        onSuccess = { onLoadStateChange(false, false) },
+        onError = { onLoadStateChange(false, true) }
+    )
+}
+
+@Composable
+private fun GradientOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Black.copy(alpha = 0.8f),
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.8f)
+                    ),
+                    startY = 0f,
+                    endY = Float.POSITIVE_INFINITY
+                )
+            )
+    )
+}
+
+@Composable
+private fun QuoteTextContent(
+    quote: Quote,
+    onToggleFavorite: () -> Unit,
+    onRandomQuote: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Spacer(Modifier.weight(1f))
+
+        QuoteText(quote.text)
+        AuthorText(quote.author)
+
+        Spacer(Modifier.weight(1f))
+
+        ControlButtons(
+            isFavorite = quote.isFavorite,
+            onToggleFavorite = onToggleFavorite,
+            onRandomQuote = onRandomQuote
+        )
+    }
+}
+
+@Composable
+private fun QuoteText(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.headlineSmall.copy(
+            fontStyle = FontStyle.Italic
+        ),
+        textAlign = TextAlign.Center,
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(bottom = 16.dp),
+        lineHeight = 28.sp
+    )
+}
+
+@Composable
+private fun AuthorText(author: String) {
+    Text(
+        text = "— $author",
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontStyle = FontStyle.Italic
+        ),
+        color = Color.White.copy(alpha = 0.9f),
+        modifier = Modifier.padding(bottom = 32.dp)
+    )
+}
+
+@Composable
+private fun ControlButtons(
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onRandomQuote: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        FavoriteButton(isFavorite, onToggleFavorite)
+        RandomQuoteButton(onRandomQuote)
+    }
+}
+
+@Composable
+private fun FavoriteButton(isFavorite: Boolean, onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(56.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                shape = CircleShape
+            )
+    ) {
+        Icon(
+            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = "Favorite",
+            tint = if (isFavorite) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+            modifier = Modifier.size(32.dp)
+        )
+    }
+}
+
+@Composable
+private fun RandomQuoteButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        modifier = Modifier.padding(8.dp)
+    ) {
+        Text("Another Quote")
+    }
+}
+
+private suspend fun animateZoom(animatable: Animatable<Float, AnimationVector1D>) {
+    animatable.animateTo(
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(24000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+}
+
+private suspend fun animatePanX(animatable: Animatable<Float, AnimationVector1D>) {
+    animatable.animateTo(
+        targetValue = 60f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 26000
+                0f at 0 with LinearEasing
+                60f at 13000 with FastOutSlowInEasing
+                0f at 26000
+            },
+            repeatMode = RepeatMode.Restart
+        )
+    )
+}
+
+private suspend fun animatePanY(animatable: Animatable<Float, AnimationVector1D>) {
+    animatable.animateTo(
+        targetValue = -40f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(22000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
 }
 
 @Composable

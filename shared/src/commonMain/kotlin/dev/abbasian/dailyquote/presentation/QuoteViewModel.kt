@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.random.Random
+import kotlin.math.absoluteValue
 
 class QuoteViewModel(
     private val getDailyQuoteUseCase: GetDailyQuoteUseCase,
@@ -193,7 +193,9 @@ class QuoteViewModel(
 
         val seed = author.hashCode().rem(70).coerceIn(1, 70)
 
-        return when (Random(seed).nextInt(4)) {
+        val serviceIndex = (author.hashCode() % 4).absoluteValue
+
+        return when (serviceIndex) {
             0 -> "https://i.pravatar.cc/${optimalImageSize}?img=$seed"
             1 -> "https://robohash.org/${urlEncode(author)}?size=${optimalImageSize}x${optimalImageSize}"
             2 -> "https://avatars.dicebear.com/api/avataaars/${urlEncode(author)}.svg?width=${optimalImageSize}&height=${optimalImageSize}"

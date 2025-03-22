@@ -25,7 +25,6 @@ class QuoteRepositoryImpl(
                 localDataSource.saveDailyQuote(newQuote, today)
                 newQuote
             } catch (e: Exception) {
-                // Fallback to local random quote if remote fails
                 getRandomQuote()
             }
         }
@@ -48,7 +47,8 @@ class QuoteRepositoryImpl(
             id = "fallback",
             text = "The best preparation for tomorrow is doing your best today.",
             author = "H. Jackson Brown Jr.",
-            category = "Motivation"
+            category = "Motivation",
+            authorImageUrl = ""
         )
     }
 

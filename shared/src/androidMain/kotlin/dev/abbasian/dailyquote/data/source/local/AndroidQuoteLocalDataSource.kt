@@ -63,14 +63,12 @@ class AndroidQuoteLocalDataSource(private val context: Context) : QuoteLocalData
         if (index != -1) {
             favorites.removeAt(index)
         } else {
-            // Find the quote in all quotes
             val allQuotes = getAllQuotes()
             val quote = allQuotes.find { it.id == quoteId }
 
             if (quote != null) {
                 favorites.add(quote.copy(isFavorite = true))
             } else {
-                // If quote not found, try to get from daily quote
                 val dailyQuote = getDailyQuote()
                 if (dailyQuote?.id == quoteId) {
                     favorites.add(dailyQuote.copy(isFavorite = true))
@@ -124,31 +122,36 @@ class AndroidQuoteLocalDataSource(private val context: Context) : QuoteLocalData
                 id = "1",
                 text = "The only way to do great work is to love what you do.",
                 author = "Steve Jobs",
-                category = "Inspiration"
+                category = "Inspiration",
+                authorImageUrl = ""
             ),
             Quote(
                 id = "2",
                 text = "Life is what happens when you're busy making other plans.",
                 author = "John Lennon",
-                category = "Life"
+                category = "Life",
+                authorImageUrl = ""
             ),
             Quote(
                 id = "3",
                 text = "The future belongs to those who believe in the beauty of their dreams.",
                 author = "Eleanor Roosevelt",
-                category = "Dreams"
+                category = "Dreams",
+                authorImageUrl = ""
             ),
             Quote(
                 id = "4",
                 text = "In the end, it's not the years in your life that count. It's the life in your years.",
                 author = "Abraham Lincoln",
-                category = "Life"
+                category = "Life",
+                authorImageUrl = ""
             ),
             Quote(
                 id = "5",
                 text = "The greatest glory in living lies not in never falling, but in rising every time we fall.",
                 author = "Nelson Mandela",
-                category = "Perseverance"
+                category = "Perseverance",
+                authorImageUrl = ""
             )
         )
     }

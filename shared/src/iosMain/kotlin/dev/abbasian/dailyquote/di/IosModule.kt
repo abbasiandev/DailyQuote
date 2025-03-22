@@ -11,6 +11,8 @@ import dev.abbasian.dailyquote.domain.GetRandomQuoteUseCase
 import dev.abbasian.dailyquote.domain.RefreshQuotesUseCase
 import dev.abbasian.dailyquote.domain.ToggleFavoriteUseCase
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
+import dev.abbasian.dailyquote.util.IOSScreenHeightProvider
+import dev.abbasian.dailyquote.util.ScreenHeightProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.koin.dsl.module
@@ -22,6 +24,7 @@ fun initKoinIOS() = initKoin(
     module {
         single<QuoteLocalDataSource> { IOSQuoteLocalDataSource() }
         single<QuoteRemoteDataSource> { IOSQuoteRemoteDataSource() }
+        single<ScreenHeightProvider> { IOSScreenHeightProvider() }
 
         single { GetDailyQuoteUseCase(get()) }
         single { GetFavoritesUseCase(get()) }
@@ -36,6 +39,7 @@ fun initKoinIOS() = initKoin(
                 toggleFavoriteUseCase = get(),
                 getRandomQuoteUseCase = get(),
                 refreshQuotesUseCase = get(),
+                screenHeightProvider = get(),
                 coroutineScope = CoroutineScope(Dispatchers.Main)
             )
         }
@@ -62,6 +66,7 @@ class QuoteHelper {
     private val toggleFavoriteUseCase by lazy { ToggleFavoriteUseCase(quoteRepository) }
     private val getRandomQuoteUseCase by lazy { GetRandomQuoteUseCase(quoteRepository) }
     private val refreshQuotesUseCase by lazy { RefreshQuotesUseCase(quoteRepository) }
+    private val screenHeightProvider by lazy { IOSScreenHeightProvider() }
 
     private val viewModel by lazy {
         QuoteViewModel(
@@ -70,6 +75,7 @@ class QuoteHelper {
             toggleFavoriteUseCase,
             getRandomQuoteUseCase,
             refreshQuotesUseCase,
+            screenHeightProvider,
             CoroutineScope(Dispatchers.Main)
         )
     }

@@ -30,5 +30,5 @@ fun commonModule() = module {
 
     single<QuoteRepository> { QuoteRepositoryImpl(get(), get()) }
 
-    factory { QuoteViewModel(get(), get(), get(), get(), get()) }
+    factory { QuoteViewModel(get(), get(), get(), get(), get(), get()) }
 }

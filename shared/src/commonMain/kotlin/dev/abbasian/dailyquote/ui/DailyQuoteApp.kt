@@ -1,35 +1,44 @@
 package dev.abbasian.dailyquote.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,45 +46,47 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import dev.abbasian.dailyquote.data.model.Quote
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DailyQuoteApp(viewModel: QuoteViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedTab by remember { mutableStateOf(0) }
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
-    var currentTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Daily Quote", "Favorites")
-
-    MaterialTheme {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Daily Quote") },
-                    actions = {
-                        IconButton(onClick = { viewModel.refreshQuotes() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                        }
-                    }
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Daily Quote") },
+                    label = { Text("Daily Quote") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
+                    label = { Text("Favorites") }
                 )
             }
-        ) { padding ->
-            Column(modifier = Modifier.padding(padding)) {
-                TabRow(selectedTabIndex = currentTab) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = currentTab == index,
-                            onClick = { currentTab = index },
-                            text = { Text(title) }
-                        )
-                    }
-                }
-
-                when (currentTab) {
+        }
+    ) { padding ->
+        CompositionLocalProvider(LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+            Box(modifier = Modifier.padding(padding)) {
+                when (selectedTab) {
                     0 -> QuoteScreen(
                         quote = uiState.currentQuote,
                         isLoading = uiState.isLoading,
@@ -84,7 +95,7 @@ fun DailyQuoteApp(viewModel: QuoteViewModel) {
                     )
                     1 -> FavoritesScreen(
                         favorites = uiState.favorites,
-                        onToggleFavorite = { viewModel.toggleFavorite() }
+                        onToggleFavorite = { viewModel.toggleFavorite(it) }
                     )
                 }
 
@@ -107,24 +118,80 @@ fun QuoteScreen(
     onRandomQuote: () -> Unit
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
             CircularProgressIndicator()
         } else if (quote != null) {
+            val scale = remember { Animatable(1f) }
+            var isImageLoading by remember { mutableStateOf(true) }
+            var imageLoadError by remember { mutableStateOf(false) }
+
+            LaunchedEffect(quote) {
+                scale.snapTo(1f)
+                scale.animateTo(
+                    targetValue = 1.05f,
+                    animationSpec = tween(durationMillis = 10000, easing = LinearEasing)
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface)
+                )
+
+                AsyncImage(
+                    model = quote.authorImageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = scale.value
+                            scaleY = scale.value
+                            alpha = if (isImageLoading || imageLoadError) 0f else 0.4f
+                        },
+                    onLoading = { isImageLoading = true },
+                    onSuccess = { isImageLoading = false },
+                    onError = {
+                        isImageLoading = false
+                        imageLoadError = true
+                    }
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.7f),
+                                    Color.Black.copy(alpha = 0.5f),
+                                    Color.Black.copy(alpha = 0.7f)
+                                )
+                            )
+                        )
+                )
+            }
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
             ) {
+                Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = "$ {quote.text}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = quote.text,
+                    style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
@@ -132,25 +199,48 @@ fun QuoteScreen(
                     text = "— ${quote.author}",
                     style = MaterialTheme.typography.titleMedium,
                     fontStyle = FontStyle.Italic,
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    color = Color.White,
+                    modifier = Modifier.padding(bottom = 32.dp)
                 )
 
+                Spacer(modifier = Modifier.weight(1f))
+
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(top = 16.dp)
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    IconButton(onClick = onToggleFavorite) {
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                shape = CircleShape
+                            )
+                            .padding(8.dp)
+                    ) {
                         Icon(
                             if (quote.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Toggle Favorite",
-                            tint = if (quote.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+                            tint = if (quote.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
-                    Button(onClick = onRandomQuote) {
+                    Button(
+                        onClick = onRandomQuote,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.padding(8.dp)
+                    ) {
                         Text("Another Quote")
                     }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         } else {
             Text("No quote available. Try refreshing.")
@@ -161,7 +251,7 @@ fun QuoteScreen(
 @Composable
 fun FavoritesScreen(
     favorites: List<Quote>,
-    onToggleFavorite: () -> Unit
+    onToggleFavorite: (String) -> Unit
 ) {
     if (favorites.isEmpty()) {
         Box(
@@ -177,42 +267,89 @@ fun FavoritesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(favorites) { quote ->
-                QuoteCard(quote = quote, onToggleFavorite = onToggleFavorite)
+                FavoriteQuoteCard(quote = quote, onToggleFavorite = { onToggleFavorite(quote.id) })
             }
         }
     }
 }
 
 @Composable
-fun QuoteCard(quote: Quote, onToggleFavorite: () -> Unit) {
+fun FavoriteQuoteCard(quote: Quote, onToggleFavorite: () -> Unit) {
     Card(
         elevation = CardDefaults.cardElevation(4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = quote.text,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
+        Box {
+            var isImageLoading by remember { mutableStateOf(true) }
+            var imageLoadError by remember { mutableStateOf(false) }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(MaterialTheme.colorScheme.surface)
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            AsyncImage(
+                model = quote.authorImageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .graphicsLayer {
+                        alpha = if (isImageLoading || imageLoadError) 0f else 0.3f
+                    },
+                onLoading = { isImageLoading = true },
+                onSuccess = { isImageLoading = false },
+                onError = {
+                    isImageLoading = false
+                    imageLoadError = true
+                }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.4f),
+                                Color.Black.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
+            )
+
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "— ${quote.author}",
+                    text = quote.text,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = FontStyle.Italic
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    color = Color.White
                 )
 
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        Icons.Default.Favorite,
-                        contentDescription = "Remove from Favorites",
-                        tint = MaterialTheme.colorScheme.primary
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "— ${quote.author}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontStyle = FontStyle.Italic,
+                        color = Color.White
                     )
+
+                    IconButton(onClick = onToggleFavorite) {
+                        Icon(
+                            Icons.Default.Favorite,
+                            contentDescription = "Remove from Favorites",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }

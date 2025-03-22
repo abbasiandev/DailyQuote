@@ -57,6 +57,8 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.datastore.core.android)
             implementation(libs.ktor.client.android)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.coil.network.okhttp)
         }
 
         val iosMain by creating {

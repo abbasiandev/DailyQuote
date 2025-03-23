@@ -10,6 +10,7 @@ interface QuoteLocalDataSource {
     suspend fun getFavorites(): List<Quote>
     fun observeFavorites(): Flow<List<Quote>>
     suspend fun toggleFavorite(quoteId: String): Boolean
+    suspend fun isFavorite(quoteId: String): Boolean
     suspend fun getRandomQuote(): Quote?
     suspend fun saveQuotes(quotes: List<Quote>)
     suspend fun getLastQuoteDate(): LocalDate?

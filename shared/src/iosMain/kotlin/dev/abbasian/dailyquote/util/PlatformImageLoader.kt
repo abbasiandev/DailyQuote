@@ -11,7 +11,6 @@ import okio.FileSystem
 
 actual fun getPlatformImageLoader(context: PlatformContext): ImageLoader {
     return ImageLoader.Builder(context)
-        .memoryCachePolicy(CachePolicy.ENABLED)
         .memoryCache {
             MemoryCache.Builder()
                 .maxSizePercent(context, 0.3)

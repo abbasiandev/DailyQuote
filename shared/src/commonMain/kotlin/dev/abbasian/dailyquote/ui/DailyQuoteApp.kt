@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
@@ -45,7 +44,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +68,8 @@ import dev.abbasian.dailyquote.data.model.Quote
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
 import dev.abbasian.dailyquote.util.getAsyncImageLoader
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.coroutines.delay
 
 @Composable
 fun DailyQuoteApp(viewModel: QuoteViewModel) {
@@ -106,7 +106,9 @@ fun DailyQuoteApp(viewModel: QuoteViewModel) {
                         quote = uiState.currentQuote,
                         isLoading = uiState.isLoading,
                         onToggleFavorite = { viewModel.toggleFavorite() },
-                        onRandomQuote = { viewModel.loadRandomQuote() }
+                        onRandomQuote = { viewModel.loadRandomQuote() },
+                        canRequestNewQuote = uiState.canRequestNewQuote,
+                        nextQuoteAvailableAt = uiState.nextQuoteAvailableAt
                     )
                     1 -> FavoritesScreen(
                         favorites = uiState.favorites,
@@ -130,7 +132,9 @@ fun QuoteScreen(
     quote: Quote?,
     isLoading: Boolean,
     onToggleFavorite: () -> Unit,
-    onRandomQuote: () -> Unit
+    onRandomQuote: () -> Unit,
+    canRequestNewQuote: Boolean,
+    nextQuoteAvailableAt: Long?
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -141,7 +145,9 @@ fun QuoteScreen(
             quote != null -> DynamicQuoteContent(
                 quote = quote,
                 onToggleFavorite = onToggleFavorite,
-                onRandomQuote = onRandomQuote
+                onRandomQuote = onRandomQuote,
+                canRequestNewQuote = canRequestNewQuote,
+                nextQuoteAvailableAt = nextQuoteAvailableAt
             )
             else -> Text("No quote available. Try refreshing.")
         }
@@ -152,7 +158,9 @@ fun QuoteScreen(
 private fun DynamicQuoteContent(
     quote: Quote,
     onToggleFavorite: () -> Unit,
-    onRandomQuote: () -> Unit
+    onRandomQuote: () -> Unit,
+    canRequestNewQuote: Boolean,
+    nextQuoteAvailableAt: Long?
 ) {
     val imageScale = remember { Animatable(1f) }
     val panOffsetX = remember { Animatable(0f) }
@@ -189,7 +197,9 @@ private fun DynamicQuoteContent(
         QuoteTextContent(
             quote = quote,
             onToggleFavorite = onToggleFavorite,
-            onRandomQuote = onRandomQuote
+            onRandomQuote = onRandomQuote,
+            canRequestNewQuote = canRequestNewQuote,
+            nextQuoteAvailableAt = nextQuoteAvailableAt
         )
     }
 }
@@ -249,7 +259,9 @@ private fun GradientOverlay() {
 private fun QuoteTextContent(
     quote: Quote,
     onToggleFavorite: () -> Unit,
-    onRandomQuote: () -> Unit
+    onRandomQuote: () -> Unit,
+    canRequestNewQuote: Boolean,
+    nextQuoteAvailableAt: Long?
 ) {
     Column(
         modifier = Modifier
@@ -268,7 +280,9 @@ private fun QuoteTextContent(
         ControlButtons(
             isFavorite = quote.isFavorite,
             onToggleFavorite = onToggleFavorite,
-            onRandomQuote = onRandomQuote
+            onRandomQuote = onRandomQuote,
+            canRequestNewQuote = canRequestNewQuote,
+            nextQuoteAvailableAt = nextQuoteAvailableAt
         )
     }
 }
@@ -304,7 +318,9 @@ private fun AuthorText(author: String) {
 private fun ControlButtons(
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onRandomQuote: () -> Unit
+    onRandomQuote: () -> Unit,
+    canRequestNewQuote: Boolean,
+    nextQuoteAvailableAt: Long?
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -312,7 +328,11 @@ private fun ControlButtons(
         verticalAlignment = Alignment.CenterVertically
     ) {
         FavoriteButton(isFavorite, onToggleFavorite)
-        RandomQuoteButton(onRandomQuote)
+        RandomQuoteButton(
+            onClick = onRandomQuote,
+            canRequestNewQuote = canRequestNewQuote,
+            nextQuoteAvailableAt = nextQuoteAvailableAt
+        )
     }
 }
 
@@ -338,16 +358,74 @@ private fun FavoriteButton(isFavorite: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun RandomQuoteButton(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        modifier = Modifier.padding(8.dp)
-    ) {
-        Text("Another Quote")
+private fun RandomQuoteButton(
+    onClick: () -> Unit,
+    canRequestNewQuote: Boolean,
+    nextQuoteAvailableAt: Long?
+) {
+    val remainingTimeText = remember { mutableStateOf("") }
+    val progressPercentage = remember { mutableStateOf(0f) }
+
+    if (!canRequestNewQuote && nextQuoteAvailableAt != null) {
+        LaunchedEffect(nextQuoteAvailableAt) {
+            val totalDuration = 24 * 60 * 60 * 1000L
+            val startTime = nextQuoteAvailableAt - totalDuration
+
+            while (true) {
+                val currentTime = Clock.System.now().toEpochMilliseconds()
+                val timeRemaining = nextQuoteAvailableAt - currentTime
+
+                if (timeRemaining <= 0) {
+                    remainingTimeText.value = ""
+                    progressPercentage.value = 1f
+                    break
+                }
+
+                progressPercentage.value = (currentTime - startTime).toFloat() / totalDuration
+
+                val hours = timeRemaining / (1000 * 60 * 60)
+                val minutes = (timeRemaining % (1000 * 60 * 60)) / (1000 * 60)
+                val seconds = (timeRemaining % (1000 * 60)) / 1000
+
+                remainingTimeText.value = "${hours.toString().padStart(2, '0')}:${
+                    minutes.toString().padStart(2, '0')
+                }:${seconds.toString().padStart(2, '0')}"
+                delay(1000)
+            }
+        }
+    }
+
+    Box(contentAlignment = Alignment.Center) {
+        if (!canRequestNewQuote) {
+            CircularProgressIndicator(
+                progress = { progressPercentage.value },
+                modifier = Modifier.size(64.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            )
+        }
+
+        Button(
+            onClick = onClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            enabled = canRequestNewQuote,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            if (canRequestNewQuote) {
+                Text("Another Quote")
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Next Quote in")
+                    Text(
+                        text = remainingTimeText.value,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
 }
 

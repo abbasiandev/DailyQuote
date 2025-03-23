@@ -10,4 +10,8 @@ interface QuoteRepository {
     suspend fun getRandomQuote(): Quote
     suspend fun refreshQuotes(): Boolean
     fun observeFavorites(): Flow<List<Quote>>
+    suspend fun checkQuoteAvailability(): Boolean
+    suspend fun getNextQuoteAvailableAt(): Long?
+    suspend fun saveLastViewedQuote(quote: Quote)
+    suspend fun getLastViewedQuote(): Quote?
 }

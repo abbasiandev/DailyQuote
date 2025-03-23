@@ -6,7 +6,9 @@ import dev.abbasian.dailyquote.domain.GetDailyQuoteUseCase
 import dev.abbasian.dailyquote.domain.GetFavoritesUseCase
 import dev.abbasian.dailyquote.domain.GetNextQuoteTimeUseCase
 import dev.abbasian.dailyquote.domain.GetRandomQuoteUseCase
+import dev.abbasian.dailyquote.domain.GetSavedQuoteUseCase
 import dev.abbasian.dailyquote.domain.RefreshQuotesUseCase
+import dev.abbasian.dailyquote.domain.SaveQuoteUseCase
 import dev.abbasian.dailyquote.domain.ToggleFavoriteUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.plus
 
 class QuoteViewModel(
     private val getDailyQuoteUseCase: GetDailyQuoteUseCase,
@@ -26,40 +30,63 @@ class QuoteViewModel(
     private val refreshQuotesUseCase: RefreshQuotesUseCase,
     private val checkQuoteAvailabilityUseCase: CheckQuoteAvailabilityUseCase,
     private val getNextQuoteTimeUseCase: GetNextQuoteTimeUseCase,
+    private val getSavedQuoteUseCase: GetSavedQuoteUseCase,
+    private val saveQuoteUseCase: SaveQuoteUseCase,
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _uiState = MutableStateFlow(QuoteUiState())
     val uiState: StateFlow<QuoteUiState> = _uiState.asStateFlow()
 
     init {
-        loadDailyQuote()
+        loadInitialQuote()
         loadFavorites()
         observeFavorites()
-        checkQuoteAvailability()
     }
 
-    private fun loadDailyQuote() {
+    private fun loadInitialQuote() {
         coroutineScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
             try {
-                val quote = getDailyQuoteUseCase()
-                val nextQuoteTime = getNextQuoteTimeUseCase()
+                val savedQuote = getSavedQuoteUseCase()
+                val canRequestNew = checkQuoteAvailabilityUseCase()
+                val nextQuoteTime = getNextQuoteTimeUseCase() ?: run {
+                    Clock.System.now().plus(24, DateTimeUnit.HOUR).toEpochMilliseconds()
+                }
+
+                if (!canRequestNew) {
+                    if (nextQuoteTime == null) {
+                        println("Invalid state: can't request but no next time")
+                    }
+                }
+
+                val finalQuote = savedQuote ?: getDailyQuoteUseCase().also {
+                    saveQuoteUseCase(it)
+                }
 
                 _uiState.update {
                     it.copy(
-                        currentQuote = quote,
+                        currentQuote = finalQuote,
                         isLoading = false,
                         error = null,
                         nextQuoteAvailableAt = nextQuoteTime,
-                        canRequestNewQuote = false
+                        canRequestNewQuote = canRequestNew
                     )
+                }
+
+                if (!canRequestNew) {
+                    monitorQuoteAvailability(nextQuoteTime)
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = "Failed to load quote: ${e.message}"
+                        error = "Failed to load quote: ${
+                            e.message?.replace(
+                                "java.lang.IllegalStateException: ",
+                                ""
+                            )
+                        }"
                     )
                 }
             }
@@ -134,20 +161,38 @@ class QuoteViewModel(
         }
     }
 
-    private fun checkQuoteAvailability() {
+    fun loadNextDailyQuote() {
         coroutineScope.launch {
-            val canRequestNewQuote = checkQuoteAvailabilityUseCase()
-            val nextQuoteTime = getNextQuoteTimeUseCase()
+            if (!uiState.value.canRequestNewQuote) return@launch
 
-            _uiState.update {
-                it.copy(
-                    nextQuoteAvailableAt = nextQuoteTime,
-                    canRequestNewQuote = canRequestNewQuote
-                )
-            }
+            _uiState.update { it.copy(isLoading = true) }
 
-            if (!canRequestNewQuote && nextQuoteTime != null) {
+            try {
+                val quote = getDailyQuoteUseCase()
+                val nextQuoteTime = getNextQuoteTimeUseCase() ?: run {
+                    Clock.System.now().plus(24, DateTimeUnit.HOUR).toEpochMilliseconds()
+                }
+
+                saveQuoteUseCase(quote)
+
+                _uiState.update {
+                    it.copy(
+                        currentQuote = quote,
+                        isLoading = false,
+                        error = null,
+                        nextQuoteAvailableAt = nextQuoteTime,
+                        canRequestNewQuote = false
+                    )
+                }
+
                 monitorQuoteAvailability(nextQuoteTime)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to load quote: ${e.message?.replace("java.lang.IllegalStateException: ", "")}"
+                    )
+                }
             }
         }
     }
@@ -175,7 +220,8 @@ class QuoteViewModel(
                     )
                 }
                 if (success) {
-                    loadDailyQuote()
+                    // Don't load a new quote on refresh, just reload the existing saved quote
+                    loadInitialQuote()
                 }
             } catch (e: Exception) {
                 _uiState.update {

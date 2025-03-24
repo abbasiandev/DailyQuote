@@ -3,42 +3,78 @@ package dev.abbasian.dailyquote.data.source
 import kotlin.math.absoluteValue
 
 class DefaultAuthorImageService : AuthorImageService {
-    private val authorDefaultImageBaseUrls = mapOf(
-        "Steve Jobs" to "https://i.pravatar.cc/ID?img=13",
-        "Albert Einstein" to "https://i.pravatar.cc/ID?img=11",
-        "Abraham Lincoln" to "https://i.pravatar.cc/ID?img=53",
-        "Mark Twain" to "https://i.pravatar.cc/ID?img=67",
-        "Eleanor Roosevelt" to "https://i.pravatar.cc/ID?img=29",
-        "Nelson Mandela" to "https://i.pravatar.cc/ID?img=12",
-        "John Lennon" to "https://i.pravatar.cc/ID?img=15",
-        "Maya Angelou" to "https://i.pravatar.cc/ID?img=32",
-        "Oscar Wilde" to "https://i.pravatar.cc/ID?img=68",
-        "Marie Curie" to "https://i.pravatar.cc/ID?img=5",
-        "Mahatma Gandhi" to "https://i.pravatar.cc/ID?img=18",
-        "Friedrich Nietzsche" to "https://i.pravatar.cc/ID?img=16"
+    private val authorImageConfig = mapOf(
+        "Steve Jobs" to ImageConfig(ServiceType.ROBOHASH, seed = "stevejobs"),
+        "Albert Einstein" to ImageConfig(ServiceType.DICEBEAR, seed = "einstein"),
+        "Abraham Lincoln" to ImageConfig(ServiceType.UI_AVATARS, name = "Abraham+Lincoln"),
+        "Mark Twain" to ImageConfig(ServiceType.ROBOHASH, seed = "marktwain"),
+        "Eleanor Roosevelt" to ImageConfig(ServiceType.DICEBEAR, seed = "eleanor"),
+        "Nelson Mandela" to ImageConfig(ServiceType.UI_AVATARS, name = "Nelson+Mandela"),
+        "John Lennon" to ImageConfig(ServiceType.ROBOHASH, seed = "johnlennon"),
+        "Maya Angelou" to ImageConfig(ServiceType.DICEBEAR, seed = "maya"),
+        "Oscar Wilde" to ImageConfig(ServiceType.UI_AVATARS, name = "Oscar+Wilde"),
+        "Marie Curie" to ImageConfig(ServiceType.ROBOHASH, seed = "mariecurie"),
+        "Mahatma Gandhi" to ImageConfig(ServiceType.DICEBEAR, seed = "gandhi"),
+        "Friedrich Nietzsche" to ImageConfig(ServiceType.UI_AVATARS, name = "Friedrich+Nietzsche")
+    )
+
+    private enum class ServiceType {
+        ROBOHASH, DICEBEAR, UI_AVATARS
+    }
+
+    private data class ImageConfig(
+        val service: ServiceType,
+        val seed: String = "",
+        val name: String = ""
     )
 
     override fun getAuthorImageUrl(author: String, imageSize: Int): String {
-        authorDefaultImageBaseUrls[author]?.let {
-            return it.replace("ID", imageSize.toString())
+        val normalizedAuthor = author.trim()
+
+        // Try direct match first
+        authorImageConfig[normalizedAuthor]?.let { config ->
+            return generateUrlFromConfig(config, normalizedAuthor, imageSize)
         }
 
-        val seed = author.hashCode().rem(70).coerceIn(1, 70)
-        val serviceIndex = (author.hashCode() % 4).absoluteValue
+        // Try case-insensitive match
+        authorImageConfig.entries.firstOrNull {
+            it.key.equals(normalizedAuthor, ignoreCase = true)
+        }?.let { entry ->
+            return generateUrlFromConfig(entry.value, normalizedAuthor, imageSize)
+        }
+
+        // Fallback using a rotation of the services
+        val serviceIndex = author.hashCode().absoluteValue % 3
 
         return when (serviceIndex) {
-            0 -> "https://i.pravatar.cc/${imageSize}?img=$seed"
-            1 -> "https://robohash.org/${urlEncode(author)}?size=${imageSize}x${imageSize}"
-            2 -> "https://avatars.dicebear.com/api/avataaars/${urlEncode(author)}.svg?width=${imageSize}&height=${imageSize}"
-            else -> "https://ui-avatars.com/api/?name=${urlEncode(author)}&size=${imageSize}&background=random"
+            0 -> "https://robohash.org/${encode(author)}?size=${imageSize}x$imageSize"
+            1 -> "https://avatars.dicebear.com/api/avataaars/${encode(author)}.svg?size=$imageSize"
+            else -> "https://ui-avatars.com/api/?name=${encode(author)}&size=$imageSize"
         }
     }
 
-    private fun urlEncode(string: String): String {
-        val allowedCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
-        return string.map { char ->
-            if (allowedCharacters.contains(char)) char.toString()
-            else "%${char.code.toString(16).padStart(2, '0').uppercase()}"
-        }.joinToString("")
+    private fun generateUrlFromConfig(config: ImageConfig, author: String, imageSize: Int): String {
+        return when (config.service) {
+            ServiceType.ROBOHASH ->
+                "https://robohash.org/${config.seed.ifEmpty { encode(author) }}?size=${imageSize}x$imageSize"
+
+            ServiceType.DICEBEAR ->
+                "https://avatars.dicebear.com/api/avataaars/${config.seed.ifEmpty { encode(author) }}.svg?size=$imageSize"
+
+            ServiceType.UI_AVATARS ->
+                "https://ui-avatars.com/api/?name=${config.name.ifEmpty { encode(author) }}&size=$imageSize"
+        }
+    }
+
+    private fun encode(input: String): String =
+        input.trim().replace(" ", "+").percentEncode()
+
+    fun String.percentEncode(): String = buildString {
+        for (char in this@percentEncode) {
+            when {
+                char.isLetterOrDigit() || "-._~".contains(char) -> append(char)
+                else -> append("%${char.code.toString(16).uppercase()}")
+            }
+        }
     }
 }

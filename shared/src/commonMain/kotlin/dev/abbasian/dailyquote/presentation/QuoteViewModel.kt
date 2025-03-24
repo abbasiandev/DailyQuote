@@ -1,6 +1,9 @@
 package dev.abbasian.dailyquote.presentation
 
 import dev.abbasian.dailyquote.data.model.Quote
+import dev.abbasian.dailyquote.data.preferences.QuoteTimePreferences
+import dev.abbasian.dailyquote.data.service.CommonTimeRemainingService
+import dev.abbasian.dailyquote.data.service.TimeRemainingService
 import dev.abbasian.dailyquote.domain.CheckQuoteAvailabilityUseCase
 import dev.abbasian.dailyquote.domain.GetDailyQuoteUseCase
 import dev.abbasian.dailyquote.domain.GetFavoritesUseCase
@@ -32,12 +35,24 @@ class QuoteViewModel(
     private val getNextQuoteTimeUseCase: GetNextQuoteTimeUseCase,
     private val getSavedQuoteUseCase: GetSavedQuoteUseCase,
     private val saveQuoteUseCase: SaveQuoteUseCase,
+    private val quoteTimePreferences: QuoteTimePreferences,
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _uiState = MutableStateFlow(QuoteUiState())
     val uiState: StateFlow<QuoteUiState> = _uiState.asStateFlow()
 
+    val _quoteTimePreferences: QuoteTimePreferences
+        get() = quoteTimePreferences
+
+    private val timeRemainingService = CommonTimeRemainingService(_quoteTimePreferences, coroutineScope)
+
     init {
+        _uiState.update { it.copy(timeRemainingService = timeRemainingService) }
+
+        coroutineScope.launch {
+            timeRemainingService.startCountdown()
+        }
+
         loadInitialQuote()
         loadFavorites()
         observeFavorites()
@@ -246,5 +261,6 @@ data class QuoteUiState(
     val isRefreshing: Boolean = false,
     val error: String? = null,
     val nextQuoteAvailableAt: Long? = null,
-    val canRequestNewQuote: Boolean = true
+    val canRequestNewQuote: Boolean = true,
+    val timeRemainingService: TimeRemainingService? = null
 )

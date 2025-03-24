@@ -44,11 +44,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,8 +70,11 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.compose.setSingletonImageLoaderFactory
 import dev.abbasian.dailyquote.data.model.Quote
+import dev.abbasian.dailyquote.data.service.CommonTimeRemainingService
+import dev.abbasian.dailyquote.data.service.TimeRemainingService
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
 import dev.abbasian.dailyquote.util.getAsyncImageLoader
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -80,9 +86,23 @@ fun DailyQuoteApp(viewModel: QuoteViewModel) {
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val coroutineScope = rememberCoroutineScope()
 
     setSingletonImageLoaderFactory { context ->
         getAsyncImageLoader(context)
+    }
+
+    val timeRemainingService = uiState.timeRemainingService ?: remember {
+        CommonTimeRemainingService(
+            viewModel._quoteTimePreferences,
+            coroutineScope
+        )
+    }
+
+    LaunchedEffect(timeRemainingService) {
+        if (uiState.timeRemainingService == null) {
+            timeRemainingService.startCountdown()
+        }
     }
 
     Scaffold(
@@ -112,7 +132,7 @@ fun DailyQuoteApp(viewModel: QuoteViewModel) {
                         onToggleFavorite = { viewModel.toggleFavorite() },
                         onRequestQuote = { viewModel.loadNextDailyQuote() },
                         canRequestNewQuote = uiState.canRequestNewQuote,
-                        nextQuoteAvailableAt = uiState.nextQuoteAvailableAt,
+                        timeRemainingService = timeRemainingService,
                         onRefresh = { viewModel.refreshQuotes() },
                         isRefreshing = uiState.isRefreshing
                     )
@@ -140,7 +160,7 @@ fun QuoteScreen(
     onToggleFavorite: () -> Unit,
     onRequestQuote: () -> Unit,
     canRequestNewQuote: Boolean,
-    nextQuoteAvailableAt: Long?,
+    timeRemainingService: TimeRemainingService,
     onRefresh: () -> Unit,
     isRefreshing: Boolean
 ) {
@@ -177,7 +197,7 @@ fun QuoteScreen(
                 onToggleFavorite = onToggleFavorite,
                 onRequestQuote = onRequestQuote,
                 canRequestNewQuote = canRequestNewQuote,
-                nextQuoteAvailableAt = nextQuoteAvailableAt
+                timeRemainingService = timeRemainingService
             )
             else -> Text("No quote available. Try refreshing.")
         }
@@ -190,7 +210,7 @@ private fun DynamicQuoteContent(
     onToggleFavorite: () -> Unit,
     onRequestQuote: () -> Unit,
     canRequestNewQuote: Boolean,
-    nextQuoteAvailableAt: Long?
+    timeRemainingService: TimeRemainingService
 ) {
     val imageScale = remember { Animatable(1f) }
     val panOffsetX = remember { Animatable(0f) }
@@ -229,7 +249,7 @@ private fun DynamicQuoteContent(
             onToggleFavorite = onToggleFavorite,
             onRequestQuote = onRequestQuote,
             canRequestNewQuote = canRequestNewQuote,
-            nextQuoteAvailableAt = nextQuoteAvailableAt
+            timeRemainingService = timeRemainingService
         )
     }
 }
@@ -291,7 +311,7 @@ private fun QuoteTextContent(
     onToggleFavorite: () -> Unit,
     onRequestQuote: () -> Unit,
     canRequestNewQuote: Boolean,
-    nextQuoteAvailableAt: Long?
+    timeRemainingService: TimeRemainingService
 ) {
     Column(
         modifier = Modifier
@@ -310,7 +330,7 @@ private fun QuoteTextContent(
             onToggleFavorite = onToggleFavorite,
             onRequestQuote = onRequestQuote,
             canRequestNewQuote = canRequestNewQuote,
-            nextQuoteAvailableAt = nextQuoteAvailableAt
+            timeRemainingService = timeRemainingService
         )
     }
 }
@@ -343,47 +363,52 @@ private fun AuthorText(author: String) {
 }
 
 @Composable
-private fun ControlButtons(
+fun ControlButtons(
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     onRequestQuote: () -> Unit,
     canRequestNewQuote: Boolean,
-    nextQuoteAvailableAt: Long?
+    timeRemainingService: TimeRemainingService
 ) {
     var remainingTimeText by remember { mutableStateOf("") }
     var progressPercentage by remember { mutableStateOf(0f) }
 
-    LaunchedEffect(nextQuoteAvailableAt) {
-        remainingTimeText = ""
-        progressPercentage = 0f
+    val coroutineScope = rememberCoroutineScope()
 
-        val startTime = nextQuoteAvailableAt?.let { it - 24 * 60 * 60 * 1000L }
-        if (nextQuoteAvailableAt == null || startTime == null) return@LaunchedEffect
+    LaunchedEffect(timeRemainingService) {
+        val initialState = timeRemainingService.getCurrentTimeState()
+        remainingTimeText = initialState.first
+        progressPercentage = initialState.second
+    }
 
-        while (true) {
-            val currentTime = Clock.System.now().toEpochMilliseconds()
-            val timeRemaining = nextQuoteAvailableAt - currentTime
-
-            if (timeRemaining <= 0) {
-                remainingTimeText = ""
-                progressPercentage = 1f
-                break
+    val timeRemainingListener = remember {
+        object : TimeRemainingService.TimeRemainingListener {
+            override fun onTimeUpdated(remainingTime: String, progress: Float) {
+                coroutineScope.launch(Dispatchers.Main) {
+                    remainingTimeText = remainingTime
+                    progressPercentage = progress
+                }
             }
 
-            progressPercentage = ((currentTime - startTime).toFloat() / (24 * 60 * 60 * 1000L)).coerceIn(0f, 1f)
-
-            val totalSeconds = (timeRemaining / 1000).toInt()
-            val hours = totalSeconds / 3600
-            val minutes = (totalSeconds % 3600) / 60
-            val seconds = totalSeconds % 60
-
-            remainingTimeText = "${hours.toString().padStart(2, '0')}:" +
-                    "${minutes.toString().padStart(2, '0')}:" +
-                    "${seconds.toString().padStart(2, '0')}"
-
-            delay(1000)
+            override fun onCountdownFinished() {
+                coroutineScope.launch(Dispatchers.Main) {
+                    remainingTimeText = ""
+                    progressPercentage = 1f
+                }
+            }
         }
     }
+
+    DisposableEffect(timeRemainingService) {
+        timeRemainingService.addListener(timeRemainingListener)
+
+        onDispose {
+            timeRemainingService.removeListener(timeRemainingListener)
+        }
+    }
+
+    val currentTimeText by rememberUpdatedState(remainingTimeText)
+    val currentProgress by rememberUpdatedState(progressPercentage)
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -414,8 +439,7 @@ private fun ControlButtons(
                 text = if (canRequestNewQuote) {
                     "Get New Quote"
                 } else {
-                    if (remainingTimeText.isEmpty()) "Loading..."
-                    else "Next in $remainingTimeText"
+                    if (currentTimeText.isEmpty()) "Loading..." else "Next in $currentTimeText"
                 }
             )
         }

@@ -8,7 +8,7 @@ data class Quote(
     val text: String,
     val author: String,
     val category: String,
-    val authorImageUrl: String,
+    val authorImageUrl: String? = null,
     var isFavorite: Boolean = false
 )
 

@@ -101,7 +101,7 @@ class QuoteRepositoryImpl(
     }
 
     private fun enhanceQuoteWithImage(quote: Quote): Quote {
-        if (quote.authorImageUrl.isNotEmpty()) {
+        if (quote.authorImageUrl.isNullOrEmpty()) {
             return quote
         }
 

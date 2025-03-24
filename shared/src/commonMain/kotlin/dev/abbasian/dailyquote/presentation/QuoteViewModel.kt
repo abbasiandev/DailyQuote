@@ -1,5 +1,6 @@
 package dev.abbasian.dailyquote.presentation
 
+import androidx.datastore.core.Closeable
 import dev.abbasian.dailyquote.data.model.Quote
 import dev.abbasian.dailyquote.data.preferences.QuoteTimePreferences
 import dev.abbasian.dailyquote.data.service.CommonTimeRemainingService
@@ -15,6 +16,7 @@ import dev.abbasian.dailyquote.domain.SaveQuoteUseCase
 import dev.abbasian.dailyquote.domain.ToggleFavoriteUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -251,6 +253,14 @@ class QuoteViewModel(
 
     fun dismissError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    fun observeState(callback: (QuoteUiState) -> Unit): () -> Unit {
+        val job = Job()
+        CoroutineScope(job).launch {
+            uiState.collect { callback(it) }
+        }
+        return { job.cancel() }
     }
 }
 

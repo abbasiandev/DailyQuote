@@ -59,6 +59,7 @@ fun initKoinIOS() = initKoin(
                 getNextQuoteTimeUseCase = get(),
                 getSavedQuoteUseCase = get(),
                 saveQuoteUseCase = get(),
+                quoteTimePreferences = get(),
                 coroutineScope = CoroutineScope(Dispatchers.Main)
             )
         }
@@ -112,6 +113,7 @@ class QuoteHelper {
             getNextQuoteTimeUseCase,
             getSavedQuoteUseCase,
             saveQuoteUseCase,
+            quoteTimePreferences,
             CoroutineScope(Dispatchers.Main)
         )
     }

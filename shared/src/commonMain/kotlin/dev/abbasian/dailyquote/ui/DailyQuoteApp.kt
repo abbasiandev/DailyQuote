@@ -75,11 +75,7 @@ import dev.abbasian.dailyquote.data.service.TimeRemainingService
 import dev.abbasian.dailyquote.presentation.QuoteViewModel
 import dev.abbasian.dailyquote.util.getAsyncImageLoader
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @Composable
 fun DailyQuoteApp(viewModel: QuoteViewModel) {
@@ -230,7 +226,7 @@ private fun DynamicQuoteContent(
 
     Box(Modifier.fillMaxSize()) {
         BackgroundImage(
-            url = quote.authorImageUrl,
+            url = quote.authorImageUrl ?: "",
             scale = imageScale.value,
             panX = panOffsetX.value,
             panY = panOffsetY.value,

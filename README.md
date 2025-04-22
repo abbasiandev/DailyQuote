@@ -1,6 +1,12 @@
 # Daily Quote
 
-Daily Quote is a Kotlin Multiplatform Project (KMP) application that delivers daily inspirational quotes. It is designed to work seamlessly on both Android and iOS platforms, leveraging shared business logic while maintaining platform-specific user interfaces. This repository serves as a comprehensive example for developers looking to learn and implement KMP in their projects.
+<p align="center">
+  <img src="ic_daily_quote-playstore.png" alt="Daily Quote Icon" width="150" height="150">
+</p>
+
+## Screenshot
+
+Add screenshots of the application here to showcase its features and UI.
 
 ## Table of Contents
 
@@ -11,8 +17,6 @@ Daily Quote is a Kotlin Multiplatform Project (KMP) application that delivers da
 5. [Usage](#usage)
 6. [Dependencies](#dependencies)
 7. [Learning Objectives](#learning-objectives)
-8. [TimeRemainingService](#timeremainingservice)
-
 ---
 
 ## Features
@@ -82,7 +86,7 @@ The project follows a **Clean Architecture** approach, which separates concerns 
 #### Android
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/daily-quote.git
+   git clone https://github.com/abbasiandev/DailyQuote.git
    ```
 2. Open the project in Android Studio.
 3. Sync Gradle:
@@ -163,8 +167,7 @@ This repository is designed to help developers learn the following:
 6. **Local Storage**:
    - Managing user preferences and local data storage with Multiplatform Settings.
 
+7. **Time Management**:
+   - Using `TimeRemainingService` to manage countdowns and provide updates on time remaining until the next quote becomes available.
+
 ---
-
-## TimeRemainingService
-
-The `TimeRemainingService` is a core component of the Daily Quote application. Its primary purpose is to manage countdowns and provide updates on the time remaining until the next quote becomes available. This service ensures cross-platform compatibility by combining shared logic with platform-specific implementations for Android and iOS.

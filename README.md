@@ -1,12 +1,10 @@
 # Daily Quote
 
 <p align="center">
-  <img src="ic_daily_quote-playstore.png" alt="Daily Quote Icon" width="150" height="150">
+  <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/ic_daily_quote-playstore.png" alt="Daily Quote Icon" width="150" height="150">
 </p>
 
-## Screenshot
-
-Add screenshots of the application here to showcase its features and UI.
+[View App Screenshot](https://mega.nz/file/TPpw1LaL#52lLcqE0Tp2-DaVRk5oc92ObM9z59c8oMBtCVZwNU4A)
 
 ## Table of Contents
 
@@ -169,5 +167,3 @@ This repository is designed to help developers learn the following:
 
 7. **Time Management**:
    - Using `TimeRemainingService` to manage countdowns and provide updates on time remaining until the next quote becomes available.
-
----

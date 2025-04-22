@@ -45,6 +45,8 @@ class QuoteViewModelWrapper: ObservableObject {
                 guard let self = self,
                       let state = self.viewModel.uiState.value as? QuoteUiState else { return }
                 
+                print("Author Image URL: \(state.currentQuote?.authorImageUrl ?? "No URL")")
+                
                 self.currentQuote = state.currentQuote
                 self.favorites = state.favorites
                 self.isLoading = state.isLoading
@@ -71,6 +73,10 @@ class QuoteViewModelWrapper: ObservableObject {
                       let service = uiState.timeRemainingService else { return }
                 
                 let timeState = service.getCurrentTimeState()
+                
+                print("Time Remaining: \(timeState.first ?? "")")
+                print("Progress Percentage: \(timeState.second ?? 0.0)")
+                
                 self.timeRemaining = timeState.first as? String ?? ""
                 self.progressPercentage = timeState.second as? Float ?? 0.0
             }

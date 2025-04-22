@@ -2,9 +2,8 @@
 
 <p align="center">
   <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/ic_daily_quote-playstore.png" alt="Daily Quote Icon" width="150" height="150">
+  <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/img_daily_quote.png" alt="Daily Quote App Screenshot" width="280" />
 </p>
-
-[View App Screenshot](https://mega.nz/file/TPpw1LaL#52lLcqE0Tp2-DaVRk5oc92ObM9z59c8oMBtCVZwNU4A)
 
 ## Table of Contents
 

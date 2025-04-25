@@ -1,7 +1,7 @@
-# Daily Quote
+<p align="center"><img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/ic_daily_quote-playstore.png" height="128"></p>
+<h1 align="center">Daily Quote</h1>
 
 <p align="center">
-  <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/ic_daily_quote-playstore.png" alt="Daily Quote Icon" width="150" height="150">
   <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/img_daily_quote.png" alt="Daily Quote App Screenshot" width="280" />
 </p>
 

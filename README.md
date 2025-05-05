@@ -139,30 +139,5 @@ The project follows a **Clean Architecture** approach, which separates concerns 
 
 ## Learning Objectives
 
-This repository is designed to help developers learn the following:
-
-1. **Kotlin Multiplatform Project (KMP)**:
-   - Setting up a KMP project.
-   - Sharing business logic across platforms.
-   - Implementing platform-specific features.
-
-2. **Clean Architecture**:
-   - Structuring code into presentation, domain, and data layers.
-   - Writing reusable and testable business logic.
-
-3. **Modern UI Development**:
-   - Using Jetpack Compose for Android.
-   - Using SwiftUI for iOS.
-
-4. **Dependency Injection**:
-   - Setting up and using Koin for dependency management.
-
-5. **Networking and Serialization**:
-   - Making API calls with Ktor.
-   - Parsing JSON responses with Kotlinx Serialization.
-
-6. **Local Storage**:
-   - Managing user preferences and local data storage with Multiplatform Settings.
-
-7. **Time Management**:
-   - Using `TimeRemainingService` to manage countdowns and provide updates on time remaining until the next quote becomes available.
+Read My Article on Medium:
+[Zero to Hero in KMM: Real App Development with Compose & SwiftUI](https://medium.com/@abbasian.dev/zero-to-hero-in-kmm-real-app-development-with-compose-and-swiftui-7157b7de8528)

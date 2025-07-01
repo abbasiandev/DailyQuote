@@ -3,11 +3,13 @@ on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     
     steps:
     - name: Checkout
@@ -57,6 +59,3 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
-        files: |
-          *.apk
-          *.ipa

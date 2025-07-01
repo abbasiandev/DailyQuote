@@ -1,0 +1,60 @@
+name: Auto Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Get tag name  
+      id: tag
+      run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+        release_name: DailyQuote ${{ steps.tag.outputs.TAG_NAME }} - Cross-Platform Mobile App
+        body: |
+          🚀 **New Release: DailyQuote ${{ steps.tag.outputs.TAG_NAME }}**
+          
+          Modern **Kotlin Multiplatform Mobile** app for daily inspirational quotes!
+          
+          ## 🌟 Key Features
+          - **Cross-platform** mobile app (Android & iOS)
+          - **Kotlin Multiplatform** shared business logic
+          - **Jetpack Compose** for Android UI
+          - **SwiftUI** for iOS UI
+          - **Offline-first architecture**
+          - **Clean Architecture** implementation
+          
+          ## 📱 Platforms Supported
+          - ✅ **Android** (API 24+)
+          - ✅ **iOS** (14.0+)
+          
+          ## 🛠️ For Developers
+          Perfect project for learning:
+          - **Kotlin Multiplatform Mobile** development
+          - **Modern declarative UI** frameworks
+          - **Cross-platform** mobile architecture
+          - **Clean coding** practices
+          
+          ## 🚀 Getting Started
+          1. Clone the repository
+          2. Follow README setup instructions
+          3. Build and run on your platform
+          
+          **Star ⭐ this repo if you find it helpful!**
+          
+          #KotlinMultiplatform #MobileApp #CrossPlatform #Android #iOS #JetpackCompose #SwiftUI #CleanArchitecture
+        draft: false
+        prerelease: false

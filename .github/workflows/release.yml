@@ -27,8 +27,37 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x ./gradlew
       
-    - name: Build Android Release APK
-      run: ./gradlew :composeApp:assembleRelease
+    - name: List available projects
+      run: ./gradlew projects
+      
+    - name: Build Android APK (try multiple common module names)
+      run: |
+        # Try different common module names for Android in KMP projects
+        if ./gradlew :androidApp:assembleRelease 2>/dev/null; then
+          echo "Built with :androidApp:assembleRelease"
+          echo "APK_PATH=androidApp/build/outputs/apk/release/*.apk" >> $GITHUB_ENV
+        elif ./gradlew :android:assembleRelease 2>/dev/null; then
+          echo "Built with :android:assembleRelease"
+          echo "APK_PATH=android/build/outputs/apk/release/*.apk" >> $GITHUB_ENV
+        elif ./gradlew :app:assembleRelease 2>/dev/null; then
+          echo "Built with :app:assembleRelease"
+          echo "APK_PATH=app/build/outputs/apk/release/*.apk" >> $GITHUB_ENV
+        elif ./gradlew assembleRelease 2>/dev/null; then
+          echo "Built with assembleRelease (root)"
+          echo "APK_PATH=build/outputs/apk/release/*.apk" >> $GITHUB_ENV
+        else
+          echo "Failed to find Android module. Available projects:"
+          ./gradlew projects
+          echo "Available tasks:"
+          ./gradlew tasks | grep -i assemble || echo "No assemble tasks found"
+          exit 1
+        fi
+      
+    - name: Verify APK exists
+      run: |
+        echo "Looking for APK at: $APK_PATH"
+        ls -la $(dirname $APK_PATH) || echo "APK directory not found"
+        ls -la $APK_PATH || echo "APK file not found"
       
     - name: Get tag name
       id: tag
@@ -75,8 +104,7 @@ jobs:
           **Star ⭐ this repo if you find it helpful!**
           
           #KotlinMultiplatform #MobileApp #CrossPlatform #Android #iOS #JetpackCompose #SwiftUI #CleanArchitecture
-        files: |
-          composeApp/build/outputs/apk/release/*.apk
+        files: ${{ env.APK_PATH }}
         draft: false
         prerelease: false
         generate_release_notes: true

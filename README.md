@@ -10,11 +10,22 @@ A modern cross-platform mobile application built with **Kotlin Multiplatform** t
 
 ---
 
-## 📱 Download & Try
+## 📱 Try
 
 **⭐ Star this repository if you find it helpful!**
 
 [📖 Read the Complete Development Guide on Medium](https://medium.com/@abbasian.dev/zero-to-hero-in-kmm-real-app-development-with-compose-and-swiftui-7157b7de8528)
+
+---
+
+## 📸 Demo
+
+<p align="center"><img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/ic_daily_quote-playstore.png" height="128"></p>
+<h1 align="center">Daily Quote</h1>
+
+<p align="center">
+  <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/img_daily_quote.png" alt="Daily Quote App Screenshot" width="280" />
+</p>
 
 ---
 

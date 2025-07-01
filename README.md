@@ -1,9 +1,22 @@
-<p align="center"><img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/ic_daily_quote-playstore.png" height="128"></p>
-<h1 align="center">Daily Quote</h1>
+# DailyQuote - Cross-Platform Inspirational Quotes App
 
-<p align="center">
-  <img src="https://github.com/abbasiandev/DailyQuote/blob/main/androidApp/src/main/img_daily_quote.png" alt="Daily Quote App Screenshot" width="280" />
-</p>
+[![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-blue.svg)](https://kotlinlang.org/lp/mobile/)
+[![Android](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com/)
+[![iOS](https://img.shields.io/badge/Platform-iOS-lightgrey.svg)](https://developer.apple.com/ios/)
+[![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-orange.svg)](https://developer.android.com/jetpack/compose)
+[![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-blue.svg)](https://developer.apple.com/xcode/swiftui/)
+
+A modern cross-platform mobile application built with **Kotlin Multiplatform** that delivers daily inspirational quotes. Features native UI with **Jetpack Compose** for Android and **SwiftUI** for iOS, implementing **Clean Architecture** with offline-first approach.
+
+---
+
+## 📱 Download & Try
+
+**⭐ Star this repository if you find it helpful!**
+
+[📖 Read the Complete Development Guide on Medium](https://medium.com/@abbasian.dev/zero-to-hero-in-kmm-real-app-development-with-compose-and-swiftui-7157b7de8528)
+
+---
 
 ## Table of Contents
 
@@ -13,7 +26,6 @@
 4. [Setup and Installation](#setup-and-installation)
 5. [Usage](#usage)
 6. [Dependencies](#dependencies)
-7. [Learning Objectives](#learning-objectives)
 ---
 
 ## Features
@@ -134,10 +146,3 @@ The project follows a **Clean Architecture** approach, which separates concerns 
 - **SwiftUI**: Declarative UI framework for iOS.
 - **Kingfisher**: Image caching and loading library.
 - **Russhwolf Multiplatform Settings**: Used for managing local storage and preferences on the iOS side.
-
----
-
-## Learning Objectives
-
-Read My Article on Medium:
-[Zero to Hero in KMM: Real App Development with Compose & SwiftUI](https://medium.com/@abbasian.dev/zero-to-hero-in-kmm-real-app-development-with-compose-and-swiftui-7157b7de8528)
